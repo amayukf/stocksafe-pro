@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stocksafe-v2';
+const CACHE_NAME = 'stocksafe-v3';
 const urlsToCache = [
     './',
     './index.html',
@@ -18,6 +18,7 @@ const urlsToCache = [
     './libs/quagga.min.js',
     './libs/jspdf.min.js',
     './libs/jspdf-autotable.min.js',
+    './libs/chart.min.js',
     './manifest.json',
     './icon-512.png'
 ];
