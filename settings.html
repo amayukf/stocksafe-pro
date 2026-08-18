@@ -162,6 +162,13 @@
 
         function handleLogoUpload(input) {
             if (input.files && input.files[0]) {
+                const file = input.files[0];
+                if (file.size > 500 * 1024) { // 500KB Limit
+                    showToast('Logo file is too large! Please use an image under 500KB.', 'error');
+                    input.value = '';
+                    return;
+                }
+                
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     localStorage.setItem('stocksafe_receipt_logo', e.target.result);
@@ -170,7 +177,7 @@
                     preview.style.display = 'block';
                     showToast('Logo saved.', 'success');
                 };
-                reader.readAsDataURL(input.files[0]);
+                reader.readAsDataURL(file);
             }
         }
 
