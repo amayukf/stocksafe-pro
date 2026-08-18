@@ -64,6 +64,8 @@ function startScanner(containerId, callback) {
             readers: [
                 "ean_reader",
                 "ean_8_reader",
+                "code_128_reader",
+                "code_39_reader",
                 "upc_reader",
                 "upc_e_reader"
             ]
@@ -112,12 +114,12 @@ function startScanner(containerId, callback) {
         if (!result || !result.codeResult || !result.codeResult.code) return;
         const code = result.codeResult.code;
         
-        // Retail barcodes are generally at least 8 digits.
-        if (code.length < 8) return;
+        // Short industrial labels (like Code 39 or 128) are at least 4 digits.
+        if (code.length < 4) return;
 
         if (code === scanLastResult) {
             scanReadingCount++;
-            if (scanReadingCount >= 5) { // Require 5 identical frames
+            if (scanReadingCount >= 3) { // Require 3 identical frames for speed
                 console.log('[Scanner] Confirmed Detected:', code);
                 if (typeof playAudio === 'function') playAudio('beep');
                 stopScanner(containerId);

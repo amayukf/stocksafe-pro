@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stocksafe-v4';
+const CACHE_NAME = 'stocksafe-v5';
 const urlsToCache = [
     './',
     './index.html',
