@@ -105,15 +105,30 @@ function startScanner(containerId, callback) {
         }, 30000);
     });
 
+    let scanLastResult = '';
+    let scanReadingCount = 0;
+
     // Only register once
     Quagga.offDetected();
     Quagga.onDetected(function(result) {
         if (!result || !result.codeResult || !result.codeResult.code) return;
         const code = result.codeResult.code;
-        console.log('[Scanner] Detected:', code);
-        if (typeof playAudio === 'function') playAudio('beep');
-        stopScanner(containerId);
-        if (callback) callback(code);
+        
+        if (code === scanLastResult) {
+            scanReadingCount++;
+            if (scanReadingCount >= 3) {
+                console.log('[Scanner] Confirmed Detected:', code);
+                if (typeof playAudio === 'function') playAudio('beep');
+                stopScanner(containerId);
+                if (callback) callback(code);
+                scanLastResult = '';
+                scanReadingCount = 0;
+            }
+        } else {
+            // New reading, reset count
+            scanLastResult = code;
+            scanReadingCount = 1;
+        }
     });
 }
 
