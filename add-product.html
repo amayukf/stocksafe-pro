@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Add Product - StockSafe Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="header-title-box">
+                <button class="back-btn" onclick="window.location.href='index.html'">&larr;</button>
+                <h1 id="page-title">Add Product</h1>
+            </div>
+            <div class="header-right">
+                <span id="store-name" class="store-badge">Main Store</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="form-container">
+            <button type="button" id="scan-btn" class="btn btn-primary btn-block" style="margin-bottom:10px;">
+                Scan Barcode
+            </button>
+            <button type="button" id="stop-scan-btn" class="btn btn-danger btn-block" style="display:none; margin-bottom:10px;">
+                Stop Camera
+            </button>
+
+            <div id="scanner-container" style="display:none; margin-bottom:14px;"></div>
+
+            <form id="product-form">
+                <input type="hidden" id="product-id">
+
+                <div class="form-group">
+                    <label for="barcode">Barcode / SKU</label>
+                    <input type="text" id="barcode" placeholder="Scan or enter barcode" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="product-name">Product Name</label>
+                    <input type="text" id="product-name" placeholder="e.g., Fanta Orange 500ml" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="quantity">Quantity</label>
+                    <input type="number" id="quantity" placeholder="e.g., 50" min="0" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="price">Selling Price (ETB)</label>
+                    <input type="number" id="price" placeholder="e.g., 45.00" min="0" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="cost-price">Cost Price (ETB) <small style="color:var(--text-secondary);">(Optional, for profit tracking)</small></label>
+                    <input type="number" id="cost-price" placeholder="e.g., 30.00" min="0" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <input type="text" id="category" placeholder="e.g., Beverages">
+                </div>
+
+                <button type="submit" class="btn btn-success btn-block" style="margin-top:6px;">Save Product</button>
+            </form>
+
+            <button type="button" id="delete-btn" class="btn btn-danger btn-block" style="margin-top:10px; display:none;">
+                Delete Product
+            </button>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item" onclick="window.location.href='index.html'"><span class="icon">&#x2302;</span><span>Home</span></button>
+        <button class="nav-item active" onclick="window.location.href='add-product.html'"><span class="icon">+</span><span>Add</span></button>
+        <button class="nav-item" onclick="window.location.href='sell.html'"><span class="icon">$</span><span>Sell</span></button>
+        <button class="nav-item" onclick="window.location.href='sales-history.html'"><span class="icon">&#x2197;</span><span>Sales</span></button>
+        <button class="nav-item" onclick="window.location.href='settings.html'"><span class="icon">&#x2699;</span><span>Settings</span></button>
+    </nav>
+
+    <script src="libs/dexie.min.js"></script>
+    <script src="libs/quagga.min.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/scanner.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const barcode = params.get('barcode');
+            if (barcode) {
+                document.getElementById('barcode').value = barcode;
+                document.getElementById('page-title').textContent = 'Edit Product';
+                fetchProductByBarcode(barcode);
+            }
+        });
+    </script>
+</body>
+</html>

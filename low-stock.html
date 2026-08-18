@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Low Stock - StockSafe Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="header-title-box">
+                <button class="back-btn" onclick="window.location.href='index.html'">&larr;</button>
+                <h1>Low Stock Alerts</h1>
+            </div>
+            <div class="header-right">
+                <span id="store-name" class="store-badge">Main Store</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="stat-card stat-danger" style="margin-bottom:16px;">
+            <span class="stat-label">Items below threshold (&le; 5 units)</span>
+            <span class="stat-value" id="low-stock-total" style="color:var(--red);">0</span>
+        </div>
+
+        <div class="section-header">
+            <h2>Critical Items</h2>
+            <button class="btn btn-ghost" style="padding:5px 10px; font-size:0.75rem;" onclick="loadLowStockView()">Refresh</button>
+        </div>
+
+        <div id="low-stock-container" class="product-container">
+            <p class="loading">Loading...</p>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item" onclick="window.location.href='index.html'"><span class="icon">&#x2302;</span><span>Home</span></button>
+        <button class="nav-item" onclick="window.location.href='add-product.html'"><span class="icon">+</span><span>Add</span></button>
+        <button class="nav-item" onclick="window.location.href='sell.html'"><span class="icon">$</span><span>Sell</span></button>
+        <button class="nav-item" onclick="window.location.href='sales-history.html'"><span class="icon">&#x2197;</span><span>Sales</span></button>
+        <button class="nav-item" onclick="window.location.href='settings.html'"><span class="icon">&#x2699;</span><span>Settings</span></button>
+    </nav>
+
+    <script src="libs/dexie.min.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', loadLowStockView);
+
+        async function loadLowStockView() {
+            const container = document.getElementById('low-stock-container');
+            const totalElem = document.getElementById('low-stock-total');
+            if (!container) return;
+
+            try {
+                const lowItems = await getLowStockProducts(5);
+                if (totalElem) totalElem.textContent = lowItems.length;
+
+                if (lowItems.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state" style="background:var(--bg-surface); border-radius:var(--radius-lg); border:1px solid var(--border-default);">
+                            <span class="empty-state-icon">&#x2713;</span>
+                            <h3>All Stock Levels Healthy</h3>
+                            <p>No products below the 5 unit threshold.</p>
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = lowItems.map((p, index) => `
+                    <div class="product-item low-stock slide-in" style="animation-delay: ${index * 0.05}s">
+                        <div class="product-info">
+                            <span class="name">${escapeHtml(p.name)}</span>
+                            <span class="barcode">${escapeHtml(p.barcode)}</span>
+                            <span class="badge badge-danger">Only ${p.quantity} left</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span style="display:block; font-size:0.85rem; font-weight:600; color:var(--green); margin-bottom:6px;">${p.price} ETB</span>
+                            <div style="display:flex; gap:4px; align-items:center; justify-content:flex-end;">
+                                <input type="number" id="restock-qty-${p.id}" value="20" min="1" style="width:55px; padding:4px; font-size:0.78rem; text-align:center;">
+                                <button class="btn btn-success" style="padding:4px 8px; font-size:0.7rem;" onclick="quickRestock(${p.id})">Restock</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                container.innerHTML = `<p class="loading" style="color:var(--red)">Error: ${err.message}</p>`;
+            }
+        }
+
+        async function quickRestock(id) {
+            const input = document.getElementById(`restock-qty-${id}`);
+            if (!input) return;
+            const addQty = parseInt(input.value, 10);
+            if (isNaN(addQty) || addQty <= 0) { showToast('Enter a valid quantity.', 'warning'); return; }
+            const product = await getProductById(id);
+            if (!product) return;
+            const newQty = product.quantity + addQty;
+            await updateProduct(id, { quantity: newQty });
+            showToast(`Restocked ${product.name}. New stock: ${newQty} units.`, 'success');
+            loadLowStockView();
+        }
+    </script>
+</body>
+</html>

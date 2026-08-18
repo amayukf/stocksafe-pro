@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>StockSafe Pro - Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="description" content="Offline inventory management system">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="header-title-box">
+                <h1>StockSafe Pro</h1>
+            </div>
+            <div class="header-right">
+                <span id="store-name" class="store-badge">Main Store</span>
+                <span id="sync-status" class="sync-status sync-offline">Offline</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Stats -->
+        <section class="stats-grid">
+            <div class="stat-card stat-info">
+                <span class="stat-label">Products</span>
+                <span class="stat-value" id="total-products">0</span>
+            </div>
+            <div class="stat-card stat-danger" onclick="window.location.href='low-stock.html'" style="cursor:pointer;">
+                <span class="stat-label">Low Stock</span>
+                <span class="stat-value" id="low-stock-count" style="color:var(--red);">0</span>
+            </div>
+            <div class="stat-card stat-success" onclick="window.location.href='sales-history.html'" style="cursor:pointer;">
+                <span class="stat-label">Today's Sales</span>
+                <span class="stat-value" id="today-sales">0</span>
+            </div>
+            <div class="stat-card stat-warning">
+                <span class="stat-label">Revenue</span>
+                <span class="stat-value" id="today-revenue">0.00 ETB</span>
+            </div>
+        </section>
+
+        <!-- Analytics Chart -->
+        <section class="chart-section" style="background:var(--bg-surface); padding:12px; border-radius:var(--radius-md); border:1px solid var(--border-default); margin-bottom:16px;">
+            <h2 style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:8px;">Revenue (Last 7 Days)</h2>
+            <div style="position:relative; height:180px; width:100%;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section class="quick-actions">
+            <div class="action-card" onclick="window.location.href='add-product.html'">
+                <div class="action-icon blue">+</div>
+                <span class="action-label">Add Product</span>
+            </div>
+            <div class="action-card" onclick="window.location.href='sell.html'">
+                <div class="action-icon green">$</div>
+                <span class="action-label">Sell Item</span>
+            </div>
+            <div class="action-card" onclick="window.location.href='low-stock.html'">
+                <div class="action-icon amber">!</div>
+                <span class="action-label">Low Stock</span>
+            </div>
+            <div class="action-card" onclick="window.location.href='sales-history.html'">
+                <div class="action-icon cyan">&#x2197;</div>
+                <span class="action-label">Sales History</span>
+            </div>
+            <div class="action-card" onclick="exportCSV()">
+                <div class="action-icon red">&#x21E3;</div>
+                <span class="action-label">Export CSV</span>
+            </div>
+        </section>
+
+        <!-- Search -->
+        <div class="form-group" style="margin-bottom: 12px;">
+            <input type="text" id="search-catalog" class="form-control" placeholder="Search products by name, barcode, or category..." oninput="loadDashboard()">
+        </div>
+
+        <!-- Product List -->
+        <section>
+            <div class="section-header">
+                <h2>Inventory</h2>
+                <button class="btn btn-ghost" style="padding:5px 10px; font-size:0.75rem;" onclick="loadDashboard()">Refresh</button>
+            </div>
+            <div id="product-container" class="product-container">
+                <p class="loading">Loading products...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="window.location.href='index.html'">
+            <span class="icon">&#x2302;</span>
+            <span>Home</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='add-product.html'">
+            <span class="icon">+</span>
+            <span>Add</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='sell.html'">
+            <span class="icon">$</span>
+            <span>Sell</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='sales-history.html'">
+            <span class="icon">&#x2197;</span>
+            <span>Sales</span>
+        </button>
+        <button class="nav-item" onclick="window.location.href='settings.html'">
+            <span class="icon">&#x2699;</span>
+            <span>Settings</span>
+        </button>
+    </nav>
+
+    <script src="libs/dexie.min.js"></script>
+    <script src="libs/chart.min.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('SW registered:', reg.scope))
+                    .catch(err => console.log('SW error:', err));
+            });
+        }
+    </script>
+</body>
+</html>

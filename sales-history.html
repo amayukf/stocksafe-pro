@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sales History - StockSafe Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="header-title-box">
+                <button class="back-btn" onclick="window.location.href='index.html'">&larr;</button>
+                <h1>Sales History</h1>
+            </div>
+            <div class="header-right">
+                <span id="store-name" class="store-badge">Main Store</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="stats-grid" style="margin-bottom:16px;">
+            <div class="stat-card stat-success">
+                <span class="stat-label">Transactions</span>
+                <span class="stat-value" id="history-count">0</span>
+            </div>
+            <div class="stat-card stat-warning">
+                <span class="stat-label">Total Revenue</span>
+                <span class="stat-value" id="history-total">0.00 ETB</span>
+            </div>
+        </section>
+
+        <div class="form-group" style="margin-bottom:12px;">
+            <input type="text" id="filter-sales" class="form-control" placeholder="Filter by product name or date (YYYY-MM-DD)..." oninput="loadSalesHistory()">
+        </div>
+
+        <div class="section-header">
+            <h2>Transactions</h2>
+        </div>
+
+        <div id="sales-container" class="sales-container">
+            <p class="loading">Loading sales...</p>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item" onclick="window.location.href='index.html'"><span class="icon">&#x2302;</span><span>Home</span></button>
+        <button class="nav-item" onclick="window.location.href='add-product.html'"><span class="icon">+</span><span>Add</span></button>
+        <button class="nav-item" onclick="window.location.href='sell.html'"><span class="icon">$</span><span>Sell</span></button>
+        <button class="nav-item active" onclick="window.location.href='sales-history.html'"><span class="icon">&#x2197;</span><span>Sales</span></button>
+        <button class="nav-item" onclick="window.location.href='settings.html'"><span class="icon">&#x2699;</span><span>Settings</span></button>
+    </nav>
+
+    <script src="libs/dexie.min.js"></script>
+    <script src="libs/jspdf.min.js"></script>
+    <script src="libs/jspdf-autotable.min.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/receipt.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', loadSalesHistory);
+
+        async function loadSalesHistory() {
+            const container = document.getElementById('sales-container');
+            const countElem = document.getElementById('history-count');
+            const totalElem = document.getElementById('history-total');
+            const filterInput = document.getElementById('filter-sales');
+            const query = filterInput ? filterInput.value.toLowerCase().trim() : '';
+
+            if (!container) return;
+
+            try {
+                const sales = await getAllSales();
+                const filtered = query ? sales.filter(s =>
+                    (s.productName && s.productName.toLowerCase().includes(query)) ||
+                    (s.dateSold && s.dateSold.includes(query)) ||
+                    (s.storeName && s.storeName.toLowerCase().includes(query))
+                ) : sales;
+
+                const totalRevenue = filtered.reduce((sum, s) => sum + (s.totalPrice || 0), 0);
+                if (countElem) countElem.textContent = filtered.length;
+                if (totalElem) totalElem.textContent = totalRevenue.toFixed(2) + ' ETB';
+
+                if (filtered.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <span class="empty-state-icon">&#x2014;</span>
+                            <h3>No Sales Recorded</h3>
+                            <p>Completed sales will appear here.</p>
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = filtered.map((s, index) => {
+                    const dateFormatted = new Date(s.dateSold).toLocaleString();
+                    const profit = (s.totalPrice || 0) - (s.totalCost || 0);
+                    const profitStyle = profit >= 0 ? 'color:var(--green);font-weight:600;' : 'color:var(--red);font-weight:600;';
+                    return `
+                        <div class="sale-item slide-in" style="animation-delay: ${index * 0.04}s">
+                            <div class="sale-info">
+                                <span class="name">${escapeHtml(s.productName)}</span>
+                                <span class="date">${dateFormatted} &middot; ${escapeHtml(s.storeName || 'Main Store')}</span>
+                                <div>
+                                    <span class="badge badge-category">Qty: ${s.quantitySold}</span>
+                                    ${s.totalCost ? `<span style="font-size:0.75rem; margin-left:6px; ${profitStyle}">Profit: ${profit.toFixed(2)} ETB</span>` : ''}
+                                </div>
+                            </div>
+                            <div style="text-align:right; flex-shrink:0;">
+                                <span style="display:block; font-size:0.93rem; font-weight:700; color:var(--green); margin-bottom:6px;">
+                                    ${parseFloat(s.totalPrice).toFixed(2)} ETB
+                                </span>
+                                <button class="btn btn-info" style="padding:4px 10px; font-size:0.7rem;" onclick="generateReceiptPDF(${s.id})">
+                                    Receipt
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('');
+
+            } catch (err) {
+                container.innerHTML = `<p class="loading" style="color:var(--red)">Error: ${err.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

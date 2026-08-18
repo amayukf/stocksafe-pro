@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Settings - StockSafe Pro</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="header-title-box">
+                <button class="back-btn" onclick="window.location.href='index.html'">&larr;</button>
+                <h1>Settings</h1>
+            </div>
+            <div class="header-right">
+                <span id="store-name" class="store-badge">Main Store</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Multi-Store -->
+        <div class="form-container" style="max-width:600px; margin-bottom:16px;">
+            <h3 style="font-size:0.93rem; font-weight:700; margin-bottom:4px;">Store Management</h3>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">Select active shop or add a new branch.</p>
+
+            <div class="form-group">
+                <label for="store-select">Active Store</label>
+                <select id="store-select" class="form-control" onchange="handleStoreChange(this.value)">
+                    <option value="Main Store">Main Store</option>
+                </select>
+            </div>
+
+            <form id="add-store-form" style="margin-top:12px; background:var(--bg-input); padding:12px; border-radius:var(--radius-sm); border:1px solid var(--border-default);">
+                <label style="font-size:0.78rem; font-weight:600; display:block; margin-bottom:6px;">Add New Branch</label>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="new-store-name" placeholder="Branch name" required style="flex:1;">
+                    <button type="submit" class="btn btn-primary" style="padding:8px 14px;">Add</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Appearance -->
+        <div class="form-container" style="max-width:600px; margin-bottom:16px;">
+            <h3 style="font-size:0.93rem; font-weight:700; margin-bottom:4px;">Appearance</h3>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">Toggle dark or light theme.</p>
+            <button class="btn btn-ghost btn-block" onclick="toggleDarkMode()">Toggle Theme</button>
+        </div>
+
+        <!-- Receipt Configuration -->
+        <div class="form-container" style="max-width:600px; margin-bottom:16px;">
+            <h3 style="font-size:0.93rem; font-weight:700; margin-bottom:4px;">Receipt Template</h3>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">Customize printed receipts.</p>
+            
+            <div class="form-group">
+                <label for="receipt-footer">Footer Message</label>
+                <input type="text" id="receipt-footer" class="form-control" placeholder="e.g. Thank you for shopping with us!" onchange="saveReceiptSettings()">
+            </div>
+            
+            <div class="form-group" style="margin-top:10px;">
+                <label for="receipt-logo">Logo (Base64 URL) or File</label>
+                <input type="file" id="receipt-logo-file" accept="image/png, image/jpeg" class="form-control" style="margin-bottom:6px;" onchange="handleLogoUpload(this)">
+                <small style="color:var(--text-muted); display:block;">Or leave blank for no logo.</small>
+                <img id="receipt-logo-preview" src="" style="max-height: 50px; margin-top:8px; display:none; border: 1px solid var(--border-default); border-radius:4px;">
+            </div>
+            
+            <button class="btn btn-danger btn-block" style="margin-top:8px;" onclick="clearReceiptLogo()">Clear Logo</button>
+        </div>
+
+        <!-- Backup -->
+        <div class="form-container" style="max-width:600px; margin-bottom:16px;">
+            <h3 style="font-size:0.93rem; font-weight:700; margin-bottom:4px;">Data & Backup</h3>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:12px;">Export or restore your data offline.</p>
+
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                <button class="btn btn-info btn-block" onclick="exportCSV()">Export Inventory (CSV)</button>
+                <button class="btn btn-primary btn-block" onclick="exportJSONBackup()">Full Database Backup (JSON)</button>
+
+                <div style="margin-top:8px; border-top:1px solid var(--border-default); padding-top:12px;">
+                    <label style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:6px;">Restore from Backup</label>
+                    <input type="file" id="restore-file" accept=".json" class="form-control" style="margin-bottom:6px;">
+                    <button class="btn btn-warning btn-block" onclick="handleRestoreDatabase()">Restore Database</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-item" onclick="window.location.href='index.html'"><span class="icon">&#x2302;</span><span>Home</span></button>
+        <button class="nav-item" onclick="window.location.href='add-product.html'"><span class="icon">+</span><span>Add</span></button>
+        <button class="nav-item" onclick="window.location.href='sell.html'"><span class="icon">$</span><span>Sell</span></button>
+        <button class="nav-item" onclick="window.location.href='sales-history.html'"><span class="icon">&#x2197;</span><span>Sales</span></button>
+        <button class="nav-item active" onclick="window.location.href='settings.html'"><span class="icon">&#x2699;</span><span>Settings</span></button>
+    </nav>
+
+    <script src="libs/dexie.min.js"></script>
+    <script src="js/db.js"></script>
+    <script src="js/sync.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/app.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', loadStoreSettings);
+
+        async function loadStoreSettings() {
+            const selectElem = document.getElementById('store-select');
+            if (!selectElem) return;
+            const stores = await getAllStores();
+            const currentStore = await getCurrentStore();
+            selectElem.innerHTML = stores.map(s => `
+                <option value="${escapeHtml(s.name)}" ${s.name === currentStore ? 'selected' : ''}>
+                    ${escapeHtml(s.name)} (${escapeHtml(s.location || 'Branch')})
+                </option>
+            `).join('');
+
+            const storeForm = document.getElementById('add-store-form');
+            if (storeForm) {
+                storeForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const input = document.getElementById('new-store-name');
+                    if (!input || !input.value.trim()) return;
+                    const name = input.value.trim();
+                    await addStore(name);
+                    await setCurrentStore(name);
+                    showToast(`Store "${name}" created and activated.`, 'success');
+                    input.value = '';
+                    loadStoreSettings();
+                    loadStoreNameHeader();
+                });
+            }
+        }
+
+        async function handleStoreChange(storeName) {
+            await setCurrentStore(storeName);
+            loadStoreNameHeader();
+            showToast(`Switched to: ${storeName}`, 'success');
+        }
+
+        async function handleRestoreDatabase() {
+            const fileInput = document.getElementById('restore-file');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                showToast('Select a JSON backup file first.', 'warning');
+                return;
+            }
+            if (!confirm('This will overwrite existing data. Continue?')) return;
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const result = await restoreDatabaseFromJSON(e.target.result);
+                showToast(result.message, result.success ? 'success' : 'error');
+                if (result.success) window.location.href = 'index.html';
+            };
+            reader.readAsText(file);
+        }
+
+        // Receipt Setting logic
+        function saveReceiptSettings() {
+            const footer = document.getElementById('receipt-footer').value;
+            localStorage.setItem('stocksafe_receipt_footer', footer);
+        }
+
+        function handleLogoUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    localStorage.setItem('stocksafe_receipt_logo', e.target.result);
+                    const preview = document.getElementById('receipt-logo-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    showToast('Logo saved.', 'success');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function clearReceiptLogo() {
+            localStorage.removeItem('stocksafe_receipt_logo');
+            document.getElementById('receipt-logo-file').value = '';
+            document.getElementById('receipt-logo-preview').style.display = 'none';
+            showToast('Logo cleared.', 'info');
+        }
+
+        function initReceiptSettings() {
+            const footer = localStorage.getItem('stocksafe_receipt_footer');
+            if (footer) document.getElementById('receipt-footer').value = footer;
+            const logo = localStorage.getItem('stocksafe_receipt_logo');
+            if (logo) {
+                const preview = document.getElementById('receipt-logo-preview');
+                preview.src = logo;
+                preview.style.display = 'block';
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', initReceiptSettings);
+    </script>
+</body>
+</html>
