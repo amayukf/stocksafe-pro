@@ -106,6 +106,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+async function saveProduct(id, barcode, name, qty, price, category, costPrice = 0) {
+    if (id) {
+        return await updateProduct(id, { barcode, name, quantity: qty, price, category, costPrice });
+    } else {
+        return await addProduct(barcode, name, qty, price, category, costPrice);
+    }
+}
+
 // ---------- DASHBOARD ----------
 async function loadDashboard() {
     const container = document.getElementById('product-container');
